@@ -1,0 +1,13 @@
+
+.box-rect
+{
+  stroke: black;
+  stroke-width: 1;
+  fill: #69a3b2;
+  cursor: pointer;  
+}
+
+.hist-rect
+{
+  fill: #69b3a2
+}
