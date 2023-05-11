@@ -1,4 +1,3 @@
-
 function add_svg(wrapper)
 {
   var svg = d3.select(wrapper).select("svg");
@@ -347,7 +346,13 @@ function draw_scatterplot(wrapper, data)
 
 
 function draw_stacked_plot(wrapper, data) {
+  const margin = { top: 60, right: 100, bottom: 60, left: 60 };
+  const width = 700 - margin.left - margin.right;
+  const height = 550 - margin.top - margin.bottom;
   var svg = add_svg(wrapper);
+  svg = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
   var color = d3.scaleOrdinal(d3.schemeCategory10);
 
   // Define data array
@@ -420,7 +425,6 @@ function draw_stacked_plot(wrapper, data) {
   svg.append("g")
     .call(y_axis);
 
-
   svg.selectAll("path")
   .data(stacked_data)
   .enter().append("path")
@@ -428,7 +432,6 @@ function draw_stacked_plot(wrapper, data) {
   .style("fill", function(d) { return color(d.key); })
   .style("opacity", 1)
   .style("stroke", "none"); // Add this line to remove the gridlines
-
 
   // Add legend
    var legend = svg.selectAll(".legend")
@@ -448,11 +451,164 @@ function draw_stacked_plot(wrapper, data) {
     .attr("x", 680)
     .attr("y", 18)
     .attr("dy", ".35em")
+    //.attr("fill", "white")
     .style("text-anchor", "end")
-    .text(function(d) { return d; });
-      return svg;
+    .text(function (d) { return d; });
+
+    
+    // Add axis labels and title
+    svg.append("text")
+      .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 20) + ")")
+      .style("text-anchor", "middle")
+      .attr("fill", "white")
+      .text("Date");
+
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x", 0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .attr("fill", "white")
+      .text("Frequency");
+
+    // Add title
+    svg.append("text")
+      .attr("x", (width / 2))
+      .attr("y", 0 - (margin.top / 2))
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .attr("fill", "white")
+      .text("Frequency of topics over time");
+    return svg;
 }
 
+function draw_stacked_plot2(wrapper, data) {
+  const margin = { top: 60, right: 100, bottom: 80, left: 80 };
+  const width = 700 - margin.left - margin.right;
+  const height = 550 - margin.top - margin.bottom;
+
+  var svg = add_svg(wrapper);
+  svg = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+  // Define data array
+  var topics = ['Inflation', 'Consumption', 'Market', 'Policy'];
+  var data_array = [];
+
+  data.forEach(function (d) {
+    var obj = {};
+    obj.date = d.date;
+    topics.forEach(function (topic) {
+      obj[topic] = +d[topic];
+    });
+    data_array.push(obj);
+  });
+
+  // Define stack layout
+  var stack = d3.stack().keys(topics).order(d3.stackOrderNone).offset(d3.stackOffsetNone);
+
+  // Generate stacked data
+  var stacked_data = stack(data_array);
+
+  // Define x and y scales
+  var x_scale = d3.scaleTime().domain(d3.extent(data_array, function (d) { return new Date(d.date); })).range([0, width]);
+  var y_scale = d3.scaleLinear().domain([0, d3.max(stacked_data[stacked_data.length - 1], function (d) { return d[1]; })]).range([height, 0]);
+
+  // Define area function
+  var area = d3.area()
+    .x(function (d) { return x_scale(new Date(d.data.date)); })
+    .y0(function (d) { return y_scale(d[0]); })
+    .y1(function (d) { return y_scale(d[1]); })
+    .curve(d3.curveLinear);
+
+  // Add path elements
+  svg.selectAll("path")
+    .data(stacked_data)
+    .enter().append("path")
+    .attr("d", area)
+    .style("fill", function (d) { return color(d.key); })
+    .style("opacity", 1)
+    // Add hover feature
+    .on("mouseover", function (d) {
+      d3.select(this).style("opacity", 1.0);
+      tooltip.style("visibility", "visible").text(d.key);
+    })
+    .on("mousemove", function (d) {
+      tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");
+    })
+    .on("mouseout", function (d) {
+      d3.select(this).style("opacity", 0.5);
+      tooltip.style("visibility", "hidden");
+    });
+
+  // Add y-axis
+  var yAxis = d3.axisLeft(y_scale).ticks(10);
+  svg.append("g")
+    .call(yAxis);
+
+  // Add x-axis
+  var xAxis = d3.axisBottom(x_scale).tickFormat(d3.timeFormat("%Y-%m-%d")).ticks(15);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .selectAll("text")
+    .attr("transform", "rotate(-90)")
+    .attr("dx", "-.8em")
+    .attr("dy", ".15em")
+    .style("text-anchor", "end");
+
+  // Add legend
+  var legend = svg.selectAll(".legend")
+    .data(topics.slice().reverse())
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+    .attr("x", width + 10)
+    .attr("y", 9)
+    .attr("width", 18)
+    .attr("height", 18)
+    .style("fill", color);
+
+  legend.append("text")
+    .attr("x", width)
+    .attr("y", 18)
+    .attr("dy", ".35em")
+    .attr("text-anchor", "end")
+    .style("fill", "white")
+    .text(function (d) { return d; });
+
+  // Add axis labels and title
+  svg.append("text")
+    .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 10) + ")")
+    .style("text-anchor", "middle")
+    .attr("fill", "white")
+    .text("Date");
+
+  svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x", 0 - (height / 2))
+    .attr("dy", "1em")
+    .style("text-anchor", "middle")
+    .attr("fill", "white")
+    .text("Frequency");
+
+  // Add title
+  svg.append("text")
+    .attr("x", (width / 2))
+    .attr("y", 0 - (margin.top / 2))
+    .attr("text-anchor", "middle")
+    .style("font-size", "16px")
+    .attr("fill", "white")
+    .text("Frequency of topics over time");
+
+  return svg;
+}
 
 function draw_graph_color(wrapper, data) {
   var margin = {top: 20, right: 20, bottom: 50, left: 50};
@@ -559,7 +715,7 @@ function draw_line_graph(data, wrapper) {
 }
 
 function draw_scatter_plot_color(wrapper, data) {
-  const margin = { top: 50, right: 80, bottom: 50, left: 50 };
+  const margin = { top: 60, right: 100, bottom: 60, left: 60 };
   const width = 700 - margin.left - margin.right;
   const height = 550 - margin.top - margin.bottom;
 
@@ -577,13 +733,19 @@ function draw_scatter_plot_color(wrapper, data) {
     .range([height, 0])
     .nice();
 
+  //const colorScale = d3.scaleLinear()
+    //.domain([0, 0.45])
+    //.range(["blue", "yellow"])
+    //.interpolate(d3.interpolateHcl);
+
   var gradientColor = (p) => {
     return d3.interpolateRainbow(p.sentiment_score);
   };
 
   const colorScale = d3.scaleLinear()
-    .domain([0, 1])
+    .domain([0,1])
     .range([0, height]);
+  
 
   const colorbar = svg.append("g")
     .attr("class", "colorbar")
@@ -599,22 +761,22 @@ function draw_scatter_plot_color(wrapper, data) {
 
   colorbarGradient.append("stop")
     .attr("offset", "0%")
-    .attr("stop-color", d3.interpolateRainbow(0));
+    .attr("stop-color", d3.interpolateRainbow(1));
   colorbarGradient.append("stop")
     .attr("offset", "25%")
-    .attr("stop-color", d3.interpolateRainbow(0.25));
+    .attr("stop-color", d3.interpolateRainbow(0.75));
 
   colorbarGradient.append("stop")
     .attr("offset", "50%")
     .attr("stop-color", d3.interpolateRainbow(0.5));
 colorbarGradient.append("stop")
     .attr("offset", "75%")
-    .attr("stop-color", d3.interpolateRainbow(0.75));
+    .attr("stop-color", d3.interpolateRainbow(0.25));
 
 
   colorbarGradient.append("stop")
     .attr("offset", "100%")
-    .attr("stop-color", d3.interpolateRainbow(1));
+    .attr("stop-color", d3.interpolateRainbow(0.1));
 
   colorbar.append("rect")
     .attr("width", 20)
@@ -623,7 +785,8 @@ colorbarGradient.append("stop")
 
   const colorbarAxis = d3.axisRight(colorScale)
     .tickFormat(d3.format(".1f"))
-    .ticks(10);
+    .ticks(5)
+    .scale(colorScale.domain([0.7, 0]));
 
   colorbar.append("g")
     .attr("transform", `translate(20, 0)`)
@@ -632,7 +795,10 @@ colorbarGradient.append("stop")
   colorbar.append("text")
     .attr("transform", `translate(${margin.right - 20}, ${-10})`)
     .style("text-anchor", "end")
+    .attr("fill", "white")
     .text("sentiment_score");
+
+  
 
   svg.selectAll("circle")
     .data(data)
@@ -643,6 +809,31 @@ colorbarGradient.append("stop")
     .attr("r", 5)
     .style("fill", d => gradientColor(d));
 
+  // add axis labels and title
+  svg.append("text")
+    .attr("x", -height / 2)
+    .attr("y", -margin.left / 2)
+    .attr("transform", "rotate(-90)")
+    .attr("text-anchor", "middle")
+    .attr("fill", "white")
+    .text("Federal Funds Rate (%)");
+
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom / 2)
+    .attr("fill", "white")
+    .attr("text-anchor", "middle")
+    .text("Date");
+
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -margin.top / 2)
+    .attr("text-anchor", "middle")
+    .attr("fill", "white")
+    .style("font-size", "16px")
+    .text("Federal Funds Rate and Sentiment Score");
+    
+
   const xAxis = d3.axisBottom(xScale);
   const yAxis = d3.axisLeft(yScale);
 
@@ -652,6 +843,4 @@ colorbarGradient.append("stop")
 
   svg.append("g")
     .call(yAxis);
-
-  return svg.node();
 }
