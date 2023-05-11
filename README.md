@@ -23,3 +23,6 @@ These steps are often necessary to clean and standardize text data before perfor
 Download the ipnyb files and run the cells. Alternatively, if one wishes not to run all the models on the data, then the pickle files provided may be used for the FinBERT analysis.
 One should download the .js and .css files on their colab notebook google drives in order to run the viualizations.
 
+# How to view the visualizations
+It is recommended that one either runs the colab notebooks directly, or one can follow the link the the colab notebooks.
+
