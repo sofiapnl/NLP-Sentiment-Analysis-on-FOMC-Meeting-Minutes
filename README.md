@@ -24,5 +24,7 @@ Download the ipnyb files and run the cells. Alternatively, if one wishes not to 
 One should download the .js and .css files on their colab notebook google drives in order to run the viualizations.
 
 # How to view the visualizations
-It is recommended that one either runs the colab notebooks directly, or one can follow the link the the colab notebooks.
+It is recommended that one either runs the colab notebooks directly, or one can follow the link the the colab notebooks below:
+https://colab.research.google.com/drive/1_B6kYd9iz5g0nxz42pLEDjzh8darm51l#scrollTo=Cc-_u9TbzzmK
+https://colab.research.google.com/drive/1E4jvlqSWnwe4Y7tVlkqfIqK3XO5568cx#scrollTo=1j9z2lFqcl94
 
